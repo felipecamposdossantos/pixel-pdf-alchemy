@@ -6,19 +6,21 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { useToast } from "@/hooks/use-toast";
-import { Compass, Upload, ArrowLeft } from "lucide-react";
+import { Compass, Upload, ArrowLeft, Download } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const CompressPdf = () => {
   const [file, setFile] = useState<File | null>(null);
   const [compressionLevel, setCompressionLevel] = useState([70]);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [processedFile, setProcessedFile] = useState<string | null>(null);
   const { toast } = useToast();
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
     if (selectedFile && selectedFile.type === "application/pdf") {
       setFile(selectedFile);
+      setProcessedFile(null); // Reset processed file when new file is selected
     } else {
       toast({
         title: "Erro",
@@ -43,11 +45,25 @@ const CompressPdf = () => {
     // Simulação do processamento
     setTimeout(() => {
       setIsProcessing(false);
+      // Simular arquivo comprimido usando o arquivo original
+      const url = URL.createObjectURL(file);
+      setProcessedFile(url);
       toast({
         title: "Sucesso!",
         description: `PDF comprimido com sucesso! Redução estimada: ${100 - compressionLevel[0]}%`,
       });
     }, 2000);
+  };
+
+  const handleDownload = () => {
+    if (processedFile && file) {
+      const link = document.createElement('a');
+      link.href = processedFile;
+      link.download = `compressed_${file.name}`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
   };
 
   const getCompressionText = (level: number) => {
@@ -133,20 +149,52 @@ const CompressPdf = () => {
                 </Card>
               </div>
 
-              <Button
-                onClick={handleCompress}
-                disabled={!file || isProcessing}
-                className="w-full bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white py-3 text-lg"
-              >
-                {isProcessing ? (
-                  <>Comprimindo...</>
-                ) : (
-                  <>
-                    <Compass className="w-5 h-5 mr-2" />
-                    Comprimir PDF
-                  </>
-                )}
-              </Button>
+              {!processedFile ? (
+                <Button
+                  onClick={handleCompress}
+                  disabled={!file || isProcessing}
+                  className="w-full bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white py-3 text-lg"
+                >
+                  {isProcessing ? (
+                    <>Comprimindo...</>
+                  ) : (
+                    <>
+                      <Compass className="w-5 h-5 mr-2" />
+                      Comprimir PDF
+                    </>
+                  )}
+                </Button>
+              ) : (
+                <div className="space-y-4">
+                  <Card className="bg-green-50 border-green-200">
+                    <CardContent className="p-4">
+                      <p className="text-center font-medium text-green-800">
+                        ✅ PDF comprimido com sucesso!
+                      </p>
+                      <p className="text-center text-sm text-green-600 mt-1">
+                        Arquivo pronto para download
+                      </p>
+                    </CardContent>
+                  </Card>
+                  <Button
+                    onClick={handleDownload}
+                    className="w-full bg-gradient-to-r from-green-500 to-blue-600 hover:from-green-600 hover:to-blue-700 text-white py-3 text-lg"
+                  >
+                    <Download className="w-5 h-5 mr-2" />
+                    Baixar PDF Comprimido
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      setFile(null);
+                      setProcessedFile(null);
+                    }}
+                    variant="outline"
+                    className="w-full"
+                  >
+                    Comprimir Outro Arquivo
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>

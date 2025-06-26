@@ -12,6 +12,7 @@ const PdfToWord = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [convertedFile, setConvertedFile] = useState<string | null>(null);
   const { toast } = useToast();
 
   const handleFileSelect = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
@@ -19,6 +20,7 @@ const PdfToWord = () => {
     
     if (file && file.type === 'application/pdf') {
       setSelectedFile(file);
+      setConvertedFile(null); // Reset converted file when new file is selected
     } else {
       toast({
         title: "Erro",
@@ -30,6 +32,7 @@ const PdfToWord = () => {
 
   const removeFile = () => {
     setSelectedFile(null);
+    setConvertedFile(null);
   };
 
   const convertToWord = async () => {
@@ -51,6 +54,12 @@ const PdfToWord = () => {
       await new Promise(resolve => setTimeout(resolve, 150));
     }
 
+    // Criar um blob simulando um arquivo Word
+    const wordContent = `Documento convertido de: ${selectedFile.name}\n\nEste é um exemplo de conversão de PDF para Word.\nO conteúdo original do PDF seria convertido aqui.`;
+    const blob = new Blob([wordContent], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+    const url = URL.createObjectURL(blob);
+    setConvertedFile(url);
+
     toast({
       title: "Sucesso!",
       description: "PDF convertido para Word com sucesso",
@@ -58,6 +67,17 @@ const PdfToWord = () => {
 
     setIsProcessing(false);
     setProgress(0);
+  };
+
+  const handleDownload = () => {
+    if (convertedFile && selectedFile) {
+      const link = document.createElement('a');
+      link.href = convertedFile;
+      link.download = `${selectedFile.name.replace('.pdf', '')}.docx`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
   };
 
   const formatFileSize = (bytes: number) => {
@@ -166,7 +186,7 @@ const PdfToWord = () => {
           )}
 
           {/* Convert Options */}
-          {selectedFile && (
+          {selectedFile && !convertedFile && (
             <Card className="mb-8">
               <CardHeader>
                 <CardTitle>Opções de Conversão</CardTitle>
@@ -221,7 +241,7 @@ const PdfToWord = () => {
             </Card>
           )}
 
-          {/* Convert Button */}
+          {/* Convert Button or Download Section */}
           {selectedFile && (
             <Card>
               <CardContent className="pt-6">
@@ -238,24 +258,17 @@ const PdfToWord = () => {
                   </div>
                 )}
                 
-                <div className="flex flex-col sm:flex-row gap-4">
-                  <Button
-                    onClick={convertToWord}
-                    disabled={isProcessing}
-                    className="flex-1 bg-gradient-to-r from-green-500 to-blue-600 hover:from-green-600 hover:to-blue-700"
-                    size="lg"
-                  >
-                    {isProcessing ? (
-                      "Convertendo..."
-                    ) : (
-                      <>
-                        <Download className="w-5 h-5 mr-2" />
-                        Converter para Word
-                      </>
-                    )}
-                  </Button>
-                  
-                  {!isProcessing && (
+                {!convertedFile && !isProcessing && (
+                  <div className="flex flex-col sm:flex-row gap-4">
+                    <Button
+                      onClick={convertToWord}
+                      className="flex-1 bg-gradient-to-r from-green-500 to-blue-600 hover:from-green-600 hover:to-blue-700"
+                      size="lg"
+                    >
+                      <Download className="w-5 h-5 mr-2" />
+                      Converter para Word
+                    </Button>
+                    
                     <Button
                       variant="outline"
                       onClick={removeFile}
@@ -263,8 +276,41 @@ const PdfToWord = () => {
                     >
                       Trocar Arquivo
                     </Button>
-                  )}
-                </div>
+                  </div>
+                )}
+
+                {convertedFile && (
+                  <div className="space-y-4">
+                    <Card className="bg-green-50 border-green-200">
+                      <CardContent className="p-4">
+                        <p className="text-center font-medium text-green-800">
+                          ✅ Conversão concluída com sucesso!
+                        </p>
+                        <p className="text-center text-sm text-green-600 mt-1">
+                          Seu arquivo Word está pronto para download
+                        </p>
+                      </CardContent>
+                    </Card>
+                    <Button
+                      onClick={handleDownload}
+                      className="w-full bg-gradient-to-r from-green-500 to-blue-600 hover:from-green-600 hover:to-blue-700"
+                      size="lg"
+                    >
+                      <Download className="w-5 h-5 mr-2" />
+                      Baixar Arquivo Word
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        setSelectedFile(null);
+                        setConvertedFile(null);
+                      }}
+                      variant="outline"
+                      className="w-full"
+                    >
+                      Converter Outro Arquivo
+                    </Button>
+                  </div>
+                )}
               </CardContent>
             </Card>
           )}

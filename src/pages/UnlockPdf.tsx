@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Unlock, Upload, ArrowLeft, Eye, EyeOff, Lock } from "lucide-react";
+import { Unlock, Upload, ArrowLeft, Eye, EyeOff, Lock, Download } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const UnlockPdf = () => {
@@ -13,12 +13,14 @@ const UnlockPdf = () => {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [unlockedFile, setUnlockedFile] = useState<string | null>(null);
   const { toast } = useToast();
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
     if (selectedFile && selectedFile.type === "application/pdf") {
       setFile(selectedFile);
+      setUnlockedFile(null); // Reset unlocked file when new file is selected
     } else {
       toast({
         title: "Erro",
@@ -60,12 +62,26 @@ const UnlockPdf = () => {
           variant: "destructive",
         });
       } else {
+        // Simular arquivo desbloqueado usando o arquivo original
+        const url = URL.createObjectURL(file);
+        setUnlockedFile(url);
         toast({
           title: "Sucesso!",
           description: "PDF desbloqueado com sucesso!",
         });
       }
     }, 2000);
+  };
+
+  const handleDownload = () => {
+    if (unlockedFile && file) {
+      const link = document.createElement('a');
+      link.href = unlockedFile;
+      link.download = `unlocked_${file.name}`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
   };
 
   return (
@@ -164,20 +180,53 @@ const UnlockPdf = () => {
                 </CardContent>
               </Card>
 
-              <Button
-                onClick={handleUnlock}
-                disabled={!file || !password || isProcessing}
-                className="w-full bg-gradient-to-r from-yellow-500 to-orange-600 hover:from-yellow-600 hover:to-orange-700 text-white py-3 text-lg"
-              >
-                {isProcessing ? (
-                  <>Desbloqueando...</>
-                ) : (
-                  <>
-                    <Unlock className="w-5 h-5 mr-2" />
-                    Desbloquear PDF
-                  </>
-                )}
-              </Button>
+              {!unlockedFile ? (
+                <Button
+                  onClick={handleUnlock}
+                  disabled={!file || !password || isProcessing}
+                  className="w-full bg-gradient-to-r from-yellow-500 to-orange-600 hover:from-yellow-600 hover:to-orange-700 text-white py-3 text-lg"
+                >
+                  {isProcessing ? (
+                    <>Desbloqueando...</>
+                  ) : (
+                    <>
+                      <Unlock className="w-5 h-5 mr-2" />
+                      Desbloquear PDF
+                    </>
+                  )}
+                </Button>
+              ) : (
+                <div className="space-y-4">
+                  <Card className="bg-green-50 border-green-200">
+                    <CardContent className="p-4">
+                      <p className="text-center font-medium text-green-800">
+                        ✅ PDF desbloqueado com sucesso!
+                      </p>
+                      <p className="text-center text-sm text-green-600 mt-1">
+                        Arquivo pronto para download
+                      </p>
+                    </CardContent>
+                  </Card>
+                  <Button
+                    onClick={handleDownload}
+                    className="w-full bg-gradient-to-r from-green-500 to-blue-600 hover:from-green-600 hover:to-blue-700 text-white py-3 text-lg"
+                  >
+                    <Download className="w-5 h-5 mr-2" />
+                    Baixar PDF Desbloqueado
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      setFile(null);
+                      setUnlockedFile(null);
+                      setPassword("");
+                    }}
+                    variant="outline"
+                    className="w-full"
+                  >
+                    Desbloquear Outro Arquivo
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
