@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
-import { FileText, Upload, Download, X } from "lucide-react";
+import { FileText, Upload, Download, X, ArrowLeft } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const PdfToWord = () => {
@@ -20,7 +20,7 @@ const PdfToWord = () => {
     
     if (file && file.type === 'application/pdf') {
       setSelectedFile(file);
-      setConvertedFile(null); // Reset converted file when new file is selected
+      setConvertedFile(null);
     } else {
       toast({
         title: "Erro",
@@ -54,9 +54,53 @@ const PdfToWord = () => {
       await new Promise(resolve => setTimeout(resolve, 150));
     }
 
-    // Criar um blob simulando um arquivo Word
-    const wordContent = `Documento convertido de: ${selectedFile.name}\n\nEste é um exemplo de conversão de PDF para Word.\nO conteúdo original do PDF seria convertido aqui.`;
-    const blob = new Blob([wordContent], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+    // Criar um documento Word válido (simulado)
+    const wordContent = `
+      <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
+      <head>
+        <meta charset="utf-8">
+        <title>Documento Convertido</title>
+        <!--[if gte mso 9]>
+        <xml>
+          <w:WordDocument>
+            <w:View>Print</w:View>
+            <w:Zoom>90</w:Zoom>
+            <w:DoNotPromptForConvert/>
+            <w:DoNotShowInsertionsAndDeletions/>
+          </w:WordDocument>
+        </xml>
+        <![endif]-->
+        <style>
+          @page Section1 {size:8.5in 11.0in; margin:1.0in 1.25in 1.0in 1.25in;}
+          div.Section1 {page:Section1;}
+          body {font-family: Arial, sans-serif; font-size: 12pt;}
+        </style>
+      </head>
+      <body>
+        <div class="Section1">
+          <h1>Documento Convertido de PDF para Word</h1>
+          <p><strong>Arquivo Original:</strong> ${selectedFile.name}</p>
+          <p><strong>Data de Conversão:</strong> ${new Date().toLocaleDateString()}</p>
+          <br>
+          <h2>Conteúdo do Documento</h2>
+          <p>Este é um exemplo de conversão de PDF para Word. O conteúdo original do PDF seria extraído e convertido para este formato editável.</p>
+          <p>Algumas características mantidas na conversão:</p>
+          <ul>
+            <li>Formatação de texto</li>
+            <li>Parágrafos e quebras de linha</li>
+            <li>Listas e numeração</li>
+            <li>Tabelas (quando possível)</li>
+          </ul>
+          <br>
+          <p><em>Documento convertido com sucesso pela ferramenta PDFTools.</em></p>
+        </div>
+      </body>
+      </html>
+    `;
+    
+    const blob = new Blob([wordContent], { 
+      type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' 
+    });
     const url = URL.createObjectURL(blob);
     setConvertedFile(url);
 
@@ -73,7 +117,7 @@ const PdfToWord = () => {
     if (convertedFile && selectedFile) {
       const link = document.createElement('a');
       link.href = convertedFile;
-      link.download = `${selectedFile.name.replace('.pdf', '')}.docx`;
+      link.download = `converted_${selectedFile.name.replace('.pdf', '')}.doc`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -95,16 +139,13 @@ const PdfToWord = () => {
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <Link to="/" className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-gradient-to-r from-green-500 to-blue-600 rounded-lg flex items-center justify-center">
-                <FileText className="w-5 h-5 text-white" />
-              </div>
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent">
-                PDFTools
-              </h1>
+              <ArrowLeft className="w-5 h-5 text-blue-600" />
+              <span className="text-blue-600 hover:text-blue-800">Voltar</span>
             </Link>
-            <Button variant="outline" asChild>
-              <Link to="/">← Voltar</Link>
-            </Button>
+            <div className="flex items-center space-x-2">
+              <FileText className="w-6 h-6 text-green-600" />
+              <h1 className="text-xl font-bold text-slate-800">Converter PDF para Word</h1>
+            </div>
           </div>
         </div>
       </header>
@@ -185,62 +226,6 @@ const PdfToWord = () => {
             </Card>
           )}
 
-          {/* Convert Options */}
-          {selectedFile && !convertedFile && (
-            <Card className="mb-8">
-              <CardHeader>
-                <CardTitle>Opções de Conversão</CardTitle>
-                <CardDescription>
-                  Escolha as configurações para a conversão
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-4">
-                    <div className="flex items-center space-x-2">
-                      <input type="checkbox" id="maintain-layout" defaultChecked className="rounded" />
-                      <label htmlFor="maintain-layout" className="text-sm text-slate-700">
-                        Manter layout original
-                      </label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <input type="checkbox" id="detect-tables" defaultChecked className="rounded" />
-                      <label htmlFor="detect-tables" className="text-sm text-slate-700">
-                        Detectar e converter tabelas
-                      </label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <input type="checkbox" id="extract-images" defaultChecked className="rounded" />
-                      <label htmlFor="extract-images" className="text-sm text-slate-700">
-                        Extrair imagens
-                      </label>
-                    </div>
-                  </div>
-                  <div className="space-y-4">
-                    <div className="flex items-center space-x-2">
-                      <input type="checkbox" id="ocr-text" className="rounded" />
-                      <label htmlFor="ocr-text" className="text-sm text-slate-700">
-                        OCR para texto escaneado
-                      </label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <input type="checkbox" id="keep-formatting" defaultChecked className="rounded" />
-                      <label htmlFor="keep-formatting" className="text-sm text-slate-700">
-                        Preservar formatação
-                      </label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <input type="checkbox" id="editable-text" defaultChecked className="rounded" />
-                      <label htmlFor="editable-text" className="text-sm text-slate-700">
-                        Texto editável
-                      </label>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
           {/* Convert Button or Download Section */}
           {selectedFile && (
             <Card>
@@ -265,7 +250,7 @@ const PdfToWord = () => {
                       className="flex-1 bg-gradient-to-r from-green-500 to-blue-600 hover:from-green-600 hover:to-blue-700"
                       size="lg"
                     >
-                      <Download className="w-5 h-5 mr-2" />
+                      <FileText className="w-5 h-5 mr-2" />
                       Converter para Word
                     </Button>
                     
@@ -314,22 +299,6 @@ const PdfToWord = () => {
               </CardContent>
             </Card>
           )}
-
-          {/* Instructions */}
-          <Card className="mt-8 bg-green-50 border-green-200">
-            <CardHeader>
-              <CardTitle className="text-green-800">Dicas para melhor conversão</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ul className="list-disc list-inside space-y-2 text-green-700">
-                <li>PDFs criados a partir de texto funcionam melhor que documentos escaneados</li>
-                <li>Para PDFs escaneados, ative a opção OCR para melhor reconhecimento de texto</li>
-                <li>Layouts complexos podem ser parcialmente mantidos - revise o documento final</li>
-                <li>Tabelas e imagens são preservadas quando possível</li>
-                <li>O arquivo Word resultante será totalmente editável</li>
-              </ul>
-            </CardContent>
-          </Card>
         </div>
       </div>
     </div>

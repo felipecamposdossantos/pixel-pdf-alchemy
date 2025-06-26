@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { RotateCw, Upload, ArrowLeft } from "lucide-react";
+import { RotateCw, Upload, ArrowLeft, Download } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const RotatePdf = () => {
@@ -14,12 +14,14 @@ const RotatePdf = () => {
   const [pageRange, setPageRange] = useState("all");
   const [customPages, setCustomPages] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
+  const [rotatedFile, setRotatedFile] = useState<string | null>(null);
   const { toast } = useToast();
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
     if (selectedFile && selectedFile.type === "application/pdf") {
       setFile(selectedFile);
+      setRotatedFile(null);
     } else {
       toast({
         title: "Erro",
@@ -44,11 +46,26 @@ const RotatePdf = () => {
     // Simulação do processamento
     setTimeout(() => {
       setIsProcessing(false);
+      // Simular arquivo rotacionado
+      const blob = new Blob([`PDF rotacionado ${rotation}°`], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      setRotatedFile(url);
       toast({
         title: "Sucesso!",
         description: `PDF rotacionado ${rotation}° com sucesso!`,
       });
     }, 2000);
+  };
+
+  const handleDownload = () => {
+    if (rotatedFile && file) {
+      const link = document.createElement('a');
+      link.href = rotatedFile;
+      link.download = `rotated_${rotation}deg_${file.name}`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
   };
 
   const rotationOptions = [
@@ -161,20 +178,52 @@ const RotatePdf = () => {
                 )}
               </div>
 
-              <Button
-                onClick={handleRotate}
-                disabled={!file || isProcessing}
-                className="w-full bg-gradient-to-r from-teal-500 to-green-600 hover:from-teal-600 hover:to-green-700 text-white py-3 text-lg"
-              >
-                {isProcessing ? (
-                  <>Girando...</>
-                ) : (
-                  <>
-                    <RotateCw className="w-5 h-5 mr-2" />
-                    Girar PDF
-                  </>
-                )}
-              </Button>
+              {!rotatedFile ? (
+                <Button
+                  onClick={handleRotate}
+                  disabled={!file || isProcessing}
+                  className="w-full bg-gradient-to-r from-teal-500 to-green-600 hover:from-teal-600 hover:to-green-700 text-white py-3 text-lg"
+                >
+                  {isProcessing ? (
+                    <>Girando...</>
+                  ) : (
+                    <>
+                      <RotateCw className="w-5 h-5 mr-2" />
+                      Girar PDF
+                    </>
+                  )}
+                </Button>
+              ) : (
+                <div className="space-y-4">
+                  <Card className="bg-green-50 border-green-200">
+                    <CardContent className="p-4">
+                      <p className="text-center font-medium text-green-800">
+                        ✅ PDF rotacionado com sucesso!
+                      </p>
+                      <p className="text-center text-sm text-green-600 mt-1">
+                        Arquivo pronto para download
+                      </p>
+                    </CardContent>
+                  </Card>
+                  <Button
+                    onClick={handleDownload}
+                    className="w-full bg-gradient-to-r from-green-500 to-blue-600 hover:from-green-600 hover:to-blue-700 text-white py-3 text-lg"
+                  >
+                    <Download className="w-5 h-5 mr-2" />
+                    Baixar PDF Rotacionado
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      setFile(null);
+                      setRotatedFile(null);
+                    }}
+                    variant="outline"
+                    className="w-full"
+                  >
+                    Girar Outro Arquivo
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>

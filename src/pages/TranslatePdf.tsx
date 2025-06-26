@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Languages, Upload, ArrowLeft } from "lucide-react";
+import { Languages, Upload, ArrowLeft, Download } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const TranslatePdf = () => {
@@ -14,6 +14,7 @@ const TranslatePdf = () => {
   const [fromLanguage, setFromLanguage] = useState("");
   const [toLanguage, setToLanguage] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
+  const [translatedFile, setTranslatedFile] = useState<string | null>(null);
   const { toast } = useToast();
 
   const languages = [
@@ -33,6 +34,7 @@ const TranslatePdf = () => {
     const selectedFile = e.target.files?.[0];
     if (selectedFile && selectedFile.type === "application/pdf") {
       setFile(selectedFile);
+      setTranslatedFile(null);
     } else {
       toast({
         title: "Erro",
@@ -57,11 +59,28 @@ const TranslatePdf = () => {
     // Simulação do processamento
     setTimeout(() => {
       setIsProcessing(false);
+      // Simular arquivo traduzido
+      const blob = new Blob([`PDF traduzido de ${fromLanguage} para ${toLanguage}`], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      setTranslatedFile(url);
       toast({
         title: "Sucesso!",
         description: "PDF traduzido com sucesso!",
       });
     }, 3000);
+  };
+
+  const handleDownload = () => {
+    if (translatedFile && file) {
+      const fromLang = languages.find(l => l.code === fromLanguage)?.name || fromLanguage;
+      const toLang = languages.find(l => l.code === toLanguage)?.name || toLanguage;
+      const link = document.createElement('a');
+      link.href = translatedFile;
+      link.download = `translated_${fromLang}_to_${toLang}_${file.name}`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
   };
 
   return (
@@ -141,20 +160,54 @@ const TranslatePdf = () => {
                 </div>
               </div>
 
-              <Button
-                onClick={handleTranslate}
-                disabled={!file || !fromLanguage || !toLanguage || isProcessing}
-                className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white py-3 text-lg"
-              >
-                {isProcessing ? (
-                  <>Traduzindo...</>
-                ) : (
-                  <>
-                    <Languages className="w-5 h-5 mr-2" />
-                    Traduzir PDF
-                  </>
-                )}
-              </Button>
+              {!translatedFile ? (
+                <Button
+                  onClick={handleTranslate}
+                  disabled={!file || !fromLanguage || !toLanguage || isProcessing}
+                  className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white py-3 text-lg"
+                >
+                  {isProcessing ? (
+                    <>Traduzindo...</>
+                  ) : (
+                    <>
+                      <Languages className="w-5 h-5 mr-2" />
+                      Traduzir PDF
+                    </>
+                  )}
+                </Button>
+              ) : (
+                <div className="space-y-4">
+                  <Card className="bg-green-50 border-green-200">
+                    <CardContent className="p-4">
+                      <p className="text-center font-medium text-green-800">
+                        ✅ PDF traduzido com sucesso!
+                      </p>
+                      <p className="text-center text-sm text-green-600 mt-1">
+                        Arquivo pronto para download
+                      </p>
+                    </CardContent>
+                  </Card>
+                  <Button
+                    onClick={handleDownload}
+                    className="w-full bg-gradient-to-r from-green-500 to-blue-600 hover:from-green-600 hover:to-blue-700 text-white py-3 text-lg"
+                  >
+                    <Download className="w-5 h-5 mr-2" />
+                    Baixar PDF Traduzido
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      setFile(null);
+                      setTranslatedFile(null);
+                      setFromLanguage("");
+                      setToLanguage("");
+                    }}
+                    variant="outline"
+                    className="w-full"
+                  >
+                    Traduzir Outro Arquivo
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>

@@ -13,12 +13,14 @@ const SplitPdf = () => {
   const [splitOption, setSplitOption] = useState<"pages" | "range">("pages");
   const [pageNumbers, setPageNumbers] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
+  const [processedFiles, setProcessedFiles] = useState<string[]>([]);
   const { toast } = useToast();
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
     if (selectedFile && selectedFile.type === "application/pdf") {
       setFile(selectedFile);
+      setProcessedFiles([]);
     } else {
       toast({
         title: "Erro",
@@ -38,16 +40,43 @@ const SplitPdf = () => {
       return;
     }
 
+    if (!pageNumbers) {
+      toast({
+        title: "Erro",
+        description: "Por favor, especifique as páginas a serem extraídas.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsProcessing(true);
     
     // Simulação do processamento
     setTimeout(() => {
       setIsProcessing(false);
+      // Simular arquivos divididos
+      const pages = pageNumbers.split(',');
+      const urls = pages.map((page, index) => {
+        const blob = new Blob([`PDF dividido - Página ${page.trim()}`], { type: 'application/pdf' });
+        return URL.createObjectURL(blob);
+      });
+      setProcessedFiles(urls);
       toast({
         title: "Sucesso!",
-        description: "PDF dividido com sucesso!",
+        description: `PDF dividido em ${pages.length} arquivo(s) com sucesso!`,
       });
     }, 2000);
+  };
+
+  const handleDownloadAll = () => {
+    processedFiles.forEach((url, index) => {
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `split_${file?.name.replace('.pdf', '')}_part_${index + 1}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    });
   };
 
   return (
@@ -134,20 +163,53 @@ const SplitPdf = () => {
                 </div>
               </div>
 
-              <Button
-                onClick={handleSplit}
-                disabled={!file || isProcessing}
-                className="w-full bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white py-3 text-lg"
-              >
-                {isProcessing ? (
-                  <>Processando...</>
-                ) : (
-                  <>
-                    <Scissors className="w-5 h-5 mr-2" />
-                    Dividir PDF
-                  </>
-                )}
-              </Button>
+              {processedFiles.length === 0 ? (
+                <Button
+                  onClick={handleSplit}
+                  disabled={!file || isProcessing}
+                  className="w-full bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white py-3 text-lg"
+                >
+                  {isProcessing ? (
+                    <>Processando...</>
+                  ) : (
+                    <>
+                      <Scissors className="w-5 h-5 mr-2" />
+                      Dividir PDF
+                    </>
+                  )}
+                </Button>
+              ) : (
+                <div className="space-y-4">
+                  <Card className="bg-green-50 border-green-200">
+                    <CardContent className="p-4">
+                      <p className="text-center font-medium text-green-800">
+                        ✅ PDF dividido com sucesso!
+                      </p>
+                      <p className="text-center text-sm text-green-600 mt-1">
+                        {processedFiles.length} arquivo(s) pronto(s) para download
+                      </p>
+                    </CardContent>
+                  </Card>
+                  <Button
+                    onClick={handleDownloadAll}
+                    className="w-full bg-gradient-to-r from-green-500 to-blue-600 hover:from-green-600 hover:to-blue-700 text-white py-3 text-lg"
+                  >
+                    <Download className="w-5 h-5 mr-2" />
+                    Baixar Todos os Arquivos
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      setFile(null);
+                      setProcessedFiles([]);
+                      setPageNumbers("");
+                    }}
+                    variant="outline"
+                    className="w-full"
+                  >
+                    Dividir Outro Arquivo
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
