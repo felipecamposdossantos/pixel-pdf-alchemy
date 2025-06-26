@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { useToast } from "@/hooks/use-toast";
-import { Compress, Upload, ArrowLeft } from "lucide-react";
+import { Compass, Upload, ArrowLeft } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const CompressPdf = () => {
@@ -67,7 +67,7 @@ const CompressPdf = () => {
               <span className="text-blue-600 hover:text-blue-800">Voltar</span>
             </Link>
             <div className="flex items-center space-x-2">
-              <Compress className="w-6 h-6 text-indigo-600" />
+              <Compass className="w-6 h-6 text-indigo-600" />
               <h1 className="text-xl font-bold text-slate-800">Comprimir PDF</h1>
             </div>
           </div>
@@ -142,7 +142,7 @@ const CompressPdf = () => {
                   <>Comprimindo...</>
                 ) : (
                   <>
-                    <Compress className="w-5 h-5 mr-2" />
+                    <Compass className="w-5 h-5 mr-2" />
                     Comprimir PDF
                   </>
                 )}

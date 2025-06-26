@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Unlock, Upload, ArrowLeft, Eye, EyeOff } from "lucide-react";
+import { Unlock, Upload, ArrowLeft, Eye, EyeOff, Lock } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const UnlockPdf = () => {
