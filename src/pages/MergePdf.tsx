@@ -5,13 +5,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
-import { FilePlus2, Upload, Download, X, Move, ArrowUp, ArrowDown } from "lucide-react";
+import { FilePlus2, Upload, Download, X, ArrowUp, ArrowDown } from "lucide-react";
 import { Link } from "react-router-dom";
+import { PDFDocument } from 'pdf-lib';
 
 const MergePdf = () => {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [mergedPdfUrl, setMergedPdfUrl] = useState<string | null>(null);
   const { toast } = useToast();
 
   const handleFileSelect = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
@@ -27,6 +29,7 @@ const MergePdf = () => {
     }
     
     setSelectedFiles(prev => [...prev, ...pdfFiles]);
+    setMergedPdfUrl(null);
   }, [toast]);
 
   const removeFile = (index: number) => {
@@ -57,19 +60,62 @@ const MergePdf = () => {
     setIsProcessing(true);
     setProgress(0);
 
-    // Simular processo de mesclagem
-    for (let i = 0; i <= 100; i += 8) {
-      setProgress(i);
-      await new Promise(resolve => setTimeout(resolve, 100));
+    try {
+      // Criar um novo documento PDF
+      const mergedPdf = await PDFDocument.create();
+      
+      for (let i = 0; i < selectedFiles.length; i++) {
+        const file = selectedFiles[i];
+        
+        // Atualizar progresso
+        setProgress((i / selectedFiles.length) * 90);
+        
+        // Ler o arquivo PDF
+        const arrayBuffer = await file.arrayBuffer();
+        const pdf = await PDFDocument.load(arrayBuffer);
+        
+        // Copiar todas as páginas do PDF atual
+        const pageIndices = pdf.getPageIndices();
+        const pages = await mergedPdf.copyPages(pdf, pageIndices);
+        
+        // Adicionar as páginas ao PDF final
+        pages.forEach((page) => mergedPdf.addPage(page));
+      }
+      
+      setProgress(100);
+      
+      // Gerar o PDF final
+      const pdfBytes = await mergedPdf.save();
+      const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      setMergedPdfUrl(url);
+
+      toast({
+        title: "Sucesso!",
+        description: "PDFs unidos com sucesso",
+      });
+
+    } catch (error) {
+      console.error('Erro ao juntar PDFs:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao juntar os arquivos PDF",
+        variant: "destructive"
+      });
     }
 
-    toast({
-      title: "Sucesso!",
-      description: "PDFs unidos com sucesso",
-    });
-
     setIsProcessing(false);
-    setProgress(0);
+  };
+
+  const handleDownload = () => {
+    if (mergedPdfUrl) {
+      const link = document.createElement('a');
+      link.href = mergedPdfUrl;
+      link.download = `pdfs-unidos-${Date.now()}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
   };
 
   const formatFileSize = (bytes: number) => {
@@ -210,65 +256,12 @@ const MergePdf = () => {
                     </div>
                   ))}
                 </div>
-                
-                {selectedFiles.length > 0 && (
-                  <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                    <p className="text-sm text-blue-700">
-                      <strong>Total:</strong> {selectedFiles.length} arquivos • {' '}
-                      <strong>Tamanho:</strong> {formatFileSize(selectedFiles.reduce((total, file) => total + file.size, 0))}
-                    </p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Merge Options */}
-          {selectedFiles.length >= 2 && (
-            <Card className="mb-8">
-              <CardHeader>
-                <CardTitle>Opções de Mesclagem</CardTitle>
-                <CardDescription>
-                  Configure como os PDFs serão unidos
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-4">
-                    <div className="flex items-center space-x-2">
-                      <input type="checkbox" id="add-bookmarks" defaultChecked className="rounded" />
-                      <label htmlFor="add-bookmarks" className="text-sm text-slate-700">
-                        Adicionar marcadores por arquivo
-                      </label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <input type="checkbox" id="optimize-size" className="rounded" />
-                      <label htmlFor="optimize-size" className="text-sm text-slate-700">
-                        Otimizar tamanho do arquivo
-                      </label>
-                    </div>
-                  </div>
-                  <div className="space-y-4">
-                    <div className="flex items-center space-x-2">
-                      <input type="checkbox" id="preserve-metadata" defaultChecked className="rounded" />
-                      <label htmlFor="preserve-metadata" className="text-sm text-slate-700">
-                        Preservar metadados
-                      </label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <input type="checkbox" id="add-page-numbers" className="rounded" />
-                      <label htmlFor="add-page-numbers" className="text-sm text-slate-700">
-                        Adicionar numeração de páginas
-                      </label>
-                    </div>
-                  </div>
-                </div>
               </CardContent>
             </Card>
           )}
 
           {/* Merge Button */}
-          {selectedFiles.length >= 2 && (
+          {selectedFiles.length >= 2 && !mergedPdfUrl && (
             <Card>
               <CardContent className="pt-6">
                 {isProcessing && (
@@ -292,7 +285,7 @@ const MergePdf = () => {
                       "Unindo PDFs..."
                     ) : (
                       <>
-                        <Download className="w-5 h-5 mr-2" />
+                        <FilePlus2 className="w-5 h-5 mr-2" />
                         Juntar PDFs ({selectedFiles.length} arquivos)
                       </>
                     )}
@@ -301,7 +294,10 @@ const MergePdf = () => {
                   {!isProcessing && (
                     <Button
                       variant="outline"
-                      onClick={() => setSelectedFiles([])}
+                      onClick={() => {
+                        setSelectedFiles([]);
+                        setMergedPdfUrl(null);
+                      }}
                       size="lg"
                     >
                       Limpar Tudo
@@ -312,21 +308,42 @@ const MergePdf = () => {
             </Card>
           )}
 
-          {/* Instructions */}
-          <Card className="mt-8 bg-purple-50 border-purple-200">
-            <CardHeader>
-              <CardTitle className="text-purple-800">Como usar</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ol className="list-decimal list-inside space-y-2 text-purple-700">
-                <li>Selecione pelo menos 2 arquivos PDF que deseja juntar</li>
-                <li>Use os botões de seta para reordenar os arquivos conforme necessário</li>
-                <li>Configure as opções de mesclagem conforme desejado</li>
-                <li>Clique em "Juntar PDFs" para criar o arquivo único</li>
-                <li>Faça o download do PDF unificado</li>
-              </ol>
-            </CardContent>
-          </Card>
+          {/* Download Section */}
+          {mergedPdfUrl && (
+            <Card className="mb-8">
+              <CardContent className="pt-6">
+                <div className="text-center space-y-4">
+                  <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto">
+                    <Download className="w-8 h-8 text-green-600" />
+                  </div>
+                  <h3 className="text-xl font-semibold text-slate-800">PDFs Unidos com Sucesso!</h3>
+                  <p className="text-slate-600">Seu arquivo PDF unificado está pronto para download.</p>
+                  
+                  <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                    <Button
+                      onClick={handleDownload}
+                      className="bg-gradient-to-r from-green-500 to-blue-600 hover:from-green-600 hover:to-blue-700"
+                      size="lg"
+                    >
+                      <Download className="w-5 h-5 mr-2" />
+                      Baixar PDF Unido
+                    </Button>
+                    
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setSelectedFiles([]);
+                        setMergedPdfUrl(null);
+                      }}
+                      size="lg"
+                    >
+                      Juntar Outros PDFs
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     </div>

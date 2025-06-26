@@ -7,11 +7,13 @@ import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { FileImage, Upload, Download, X, Move } from "lucide-react";
 import { Link } from "react-router-dom";
+import jsPDF from 'jspdf';
 
 const ImagesToPdf = () => {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const { toast } = useToast();
 
   const handleFileSelect = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
@@ -27,19 +29,11 @@ const ImagesToPdf = () => {
     }
     
     setSelectedFiles(prev => [...prev, ...imageFiles]);
+    setPdfUrl(null);
   }, [toast]);
 
   const removeFile = (index: number) => {
     setSelectedFiles(prev => prev.filter((_, i) => i !== index));
-  };
-
-  const moveFile = (fromIndex: number, toIndex: number) => {
-    setSelectedFiles(prev => {
-      const newFiles = [...prev];
-      const [movedFile] = newFiles.splice(fromIndex, 1);
-      newFiles.splice(toIndex, 0, movedFile);
-      return newFiles;
-    });
   };
 
   const convertToPdf = async () => {
@@ -55,19 +49,96 @@ const ImagesToPdf = () => {
     setIsProcessing(true);
     setProgress(0);
 
-    // Simular processo de conversão
-    for (let i = 0; i <= 100; i += 10) {
-      setProgress(i);
-      await new Promise(resolve => setTimeout(resolve, 200));
+    try {
+      const pdf = new jsPDF();
+      let isFirstPage = true;
+
+      for (let i = 0; i < selectedFiles.length; i++) {
+        const file = selectedFiles[i];
+        
+        // Atualizar progresso
+        setProgress((i / selectedFiles.length) * 90);
+
+        // Converter imagem para base64
+        const base64 = await new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.readAsDataURL(file);
+        });
+
+        // Criar uma imagem para obter dimensões
+        const img = new Image();
+        await new Promise((resolve) => {
+          img.onload = resolve;
+          img.src = base64;
+        });
+
+        // Calcular dimensões para caber na página
+        const pageWidth = pdf.internal.pageSize.getWidth();
+        const pageHeight = pdf.internal.pageSize.getHeight();
+        const margin = 10;
+        
+        const maxWidth = pageWidth - (margin * 2);
+        const maxHeight = pageHeight - (margin * 2);
+        
+        let { width, height } = img;
+        
+        // Redimensionar se necessário
+        if (width > maxWidth) {
+          height = (height * maxWidth) / width;
+          width = maxWidth;
+        }
+        
+        if (height > maxHeight) {
+          width = (width * maxHeight) / height;
+          height = maxHeight;
+        }
+
+        // Centralizar imagem na página
+        const x = (pageWidth - width) / 2;
+        const y = (pageHeight - height) / 2;
+
+        if (!isFirstPage) {
+          pdf.addPage();
+        }
+        
+        pdf.addImage(base64, 'JPEG', x, y, width, height);
+        isFirstPage = false;
+      }
+
+      setProgress(100);
+
+      // Gerar PDF
+      const pdfBlob = pdf.output('blob');
+      const url = URL.createObjectURL(pdfBlob);
+      setPdfUrl(url);
+
+      toast({
+        title: "Sucesso!",
+        description: "PDF criado com sucesso",
+      });
+
+    } catch (error) {
+      console.error('Erro ao converter:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao converter imagens para PDF",
+        variant: "destructive"
+      });
     }
 
-    toast({
-      title: "Sucesso!",
-      description: "PDF criado com sucesso",
-    });
-
     setIsProcessing(false);
-    setProgress(0);
+  };
+
+  const handleDownload = () => {
+    if (pdfUrl) {
+      const link = document.createElement('a');
+      link.href = pdfUrl;
+      link.download = `imagens-convertidas-${Date.now()}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
   };
 
   const formatFileSize = (bytes: number) => {
@@ -154,7 +225,7 @@ const ImagesToPdf = () => {
               <CardHeader>
                 <CardTitle>Imagens Selecionadas ({selectedFiles.length})</CardTitle>
                 <CardDescription>
-                  Arraste e solte para reordenar as imagens conforme desejado no PDF
+                  As imagens serão adicionadas ao PDF na ordem mostrada
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -164,7 +235,6 @@ const ImagesToPdf = () => {
                       key={index}
                       className="flex items-center p-3 bg-slate-50 rounded-lg border hover:bg-slate-100 transition-colors"
                     >
-                      <Move className="w-5 h-5 text-slate-400 mr-3 cursor-move" />
                       <FileImage className="w-8 h-8 text-blue-500 mr-3" />
                       <div className="flex-1">
                         <p className="font-medium text-slate-800">{file.name}</p>
@@ -186,7 +256,7 @@ const ImagesToPdf = () => {
           )}
 
           {/* Convert Button */}
-          {selectedFiles.length > 0 && (
+          {selectedFiles.length > 0 && !pdfUrl && (
             <Card>
               <CardContent className="pt-6">
                 {isProcessing && (
@@ -219,7 +289,10 @@ const ImagesToPdf = () => {
                   {!isProcessing && (
                     <Button
                       variant="outline"
-                      onClick={() => setSelectedFiles([])}
+                      onClick={() => {
+                        setSelectedFiles([]);
+                        setPdfUrl(null);
+                      }}
                       size="lg"
                     >
                       Limpar Tudo
@@ -230,20 +303,42 @@ const ImagesToPdf = () => {
             </Card>
           )}
 
-          {/* Instructions */}
-          <Card className="mt-8 bg-blue-50 border-blue-200">
-            <CardHeader>
-              <CardTitle className="text-blue-800">Como usar</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ol className="list-decimal list-inside space-y-2 text-blue-700">
-                <li>Clique em "Selecionar Imagens" ou arraste suas imagens para a área de upload</li>
-                <li>Organize as imagens na ordem desejada usando os controles de reordenação</li>
-                <li>Clique em "Converter para PDF" para gerar seu arquivo PDF</li>
-                <li>Faça o download do PDF convertido</li>
-              </ol>
-            </CardContent>
-          </Card>
+          {/* Download Section */}
+          {pdfUrl && (
+            <Card className="mb-8">
+              <CardContent className="pt-6">
+                <div className="text-center space-y-4">
+                  <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto">
+                    <Download className="w-8 h-8 text-green-600" />
+                  </div>
+                  <h3 className="text-xl font-semibold text-slate-800">PDF Criado com Sucesso!</h3>
+                  <p className="text-slate-600">Seu arquivo PDF está pronto para download.</p>
+                  
+                  <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                    <Button
+                      onClick={handleDownload}
+                      className="bg-gradient-to-r from-green-500 to-blue-600 hover:from-green-600 hover:to-blue-700"
+                      size="lg"
+                    >
+                      <Download className="w-5 h-5 mr-2" />
+                      Baixar PDF
+                    </Button>
+                    
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setSelectedFiles([]);
+                        setPdfUrl(null);
+                      }}
+                      size="lg"
+                    >
+                      Converter Outras Imagens
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     </div>
