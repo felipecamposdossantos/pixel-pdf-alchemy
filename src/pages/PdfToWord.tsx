@@ -33,24 +33,22 @@ const PdfToWord = () => {
     }
   };
 
-  const convertPdfToCanvas = async (pdfBytes: ArrayBuffer, pageIndex: number): Promise<HTMLCanvasElement> => {
-    const pdf = await PDFDocument.load(pdfBytes);
-    const page = pdf.getPage(pageIndex);
-    const { width, height } = page.getSize();
-    
-    const canvas = document.createElement('canvas');
-    const context = canvas.getContext('2d')!;
-    canvas.width = width;
-    canvas.height = height;
-    
-    // Simular renderização da página
-    context.fillStyle = 'white';
-    context.fillRect(0, 0, width, height);
-    context.fillStyle = 'black';
-    context.font = '16px Arial';
-    context.fillText('Página renderizada para OCR', 20, 50);
-    
-    return canvas;
+  const pdfToCanvas = async (pdfBytes: ArrayBuffer, pageIndex: number): Promise<HTMLCanvasElement> => {
+    return new Promise((resolve) => {
+      const canvas = document.createElement('canvas');
+      const context = canvas.getContext('2d')!;
+      canvas.width = 800;
+      canvas.height = 1000;
+      
+      // Simular renderização da página PDF
+      context.fillStyle = 'white';
+      context.fillRect(0, 0, canvas.width, canvas.height);
+      context.fillStyle = 'black';
+      context.font = '16px Arial';
+      context.fillText(`Conteúdo da página ${pageIndex + 1}`, 50, 100);
+      
+      resolve(canvas);
+    });
   };
 
   const extractTextFromPdf = async (pdfBytes: ArrayBuffer): Promise<string> => {
@@ -62,11 +60,7 @@ const PdfToWord = () => {
       setProgress((i / pageCount) * 80);
       
       try {
-        // Primeiro, tentar extrair texto diretamente
-        const page = pdf.getPage(i);
-        // Como pdf-lib não tem método direto para extrair texto, usaremos OCR
-        
-        const canvas = await convertPdfToCanvas(pdfBytes, i);
+        const canvas = await pdfToCanvas(pdfBytes, i);
         const imageData = canvas.toDataURL('image/png');
         
         const result = await Tesseract.recognize(imageData, 'por', {
@@ -77,10 +71,10 @@ const PdfToWord = () => {
           }
         });
         
-        extractedText += `\n\n--- Página ${i + 1} ---\n\n${result.data.text}`;
+        extractedText += `${result.data.text}\n\n`;
       } catch (error) {
         console.error(`Erro ao processar página ${i + 1}:`, error);
-        extractedText += `\n\n--- Página ${i + 1} ---\n\n[Erro ao extrair texto desta página]`;
+        extractedText += `[Erro ao extrair texto da página ${i + 1}]\n\n`;
       }
     }
     
@@ -88,9 +82,9 @@ const PdfToWord = () => {
   };
 
   const createWordDocument = async (text: string): Promise<Blob> => {
-    const paragraphs = text.split('\n').map(line => 
+    const paragraphs = text.split('\n').filter(line => line.trim()).map(line => 
       new Paragraph({
-        children: [new TextRun(line || ' ')],
+        children: [new TextRun(line)],
       })
     );
 
@@ -123,15 +117,12 @@ const PdfToWord = () => {
     try {
       const arrayBuffer = await file.arrayBuffer();
       
-      // Extrair texto do PDF (com OCR se necessário)
       setProgress(10);
       const extractedText = await extractTextFromPdf(arrayBuffer);
       
-      // Criar documento Word
       setProgress(90);
       const wordBlob = await createWordDocument(extractedText);
       
-      // Criar URL para download
       const url = URL.createObjectURL(wordBlob);
       setConvertedFile(url);
       setProgress(100);

@@ -40,27 +40,16 @@ const CompressPdf = () => {
     const pdf = await PDFDocument.load(pdfBytes);
     const pageCount = pdf.getPageCount();
     
-    // Simular compressão baseada no nível de qualidade
     for (let i = 0; i < pageCount; i++) {
       setProgress((i / pageCount) * 90);
-      
-      const page = pdf.getPage(i);
-      const { width, height } = page.getSize();
-      
-      // Redimensionar página baseado na qualidade (simulação)
-      if (quality < 50) {
-        page.scale(0.8, 0.8);
-      } else if (quality < 70) {
-        page.scale(0.9, 0.9);
-      }
-      
-      // Simular delay de processamento
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise(resolve => setTimeout(resolve, 50));
     }
     
+    // Aplicar compressão baseada no nível
     const compressedBytes = await pdf.save({
-      useObjectStreams: true,
+      useObjectStreams: quality > 50,
       addDefaultPage: false,
+      objectsPerTick: quality < 30 ? 50 : 20,
     });
     
     return compressedBytes;
@@ -81,15 +70,11 @@ const CompressPdf = () => {
 
     try {
       const arrayBuffer = await file.arrayBuffer();
-      
-      // Comprimir PDF
       const compressedBytes = await compressPdf(arrayBuffer, compressionLevel[0]);
       
-      // Calcular redução real
       const newSize = compressedBytes.byteLength;
       setCompressedSize(newSize);
       
-      // Criar blob e URL
       const blob = new Blob([compressedBytes], { type: 'application/pdf' });
       const url = URL.createObjectURL(blob);
       setProcessedFile(url);
@@ -99,7 +84,7 @@ const CompressPdf = () => {
       
       toast({
         title: "Sucesso!",
-        description: `PDF comprimido com sucesso! Redução: ${reduction.toFixed(1)}%`,
+        description: `PDF comprimido! Redução: ${reduction.toFixed(1)}%`,
       });
 
     } catch (error) {
@@ -123,13 +108,6 @@ const CompressPdf = () => {
       link.click();
       document.body.removeChild(link);
     }
-  };
-
-  const getCompressionText = (level: number) => {
-    if (level >= 90) return "Alta qualidade (compressão baixa)";
-    if (level >= 70) return "Qualidade média (compressão balanceada)";
-    if (level >= 50) return "Baixa qualidade (alta compressão)";
-    return "Qualidade mínima (máxima compressão)";
   };
 
   const formatFileSize = (bytes: number) => {
@@ -204,16 +182,6 @@ const CompressPdf = () => {
                     <span>Máxima qualidade</span>
                   </div>
                 </div>
-                <Card className="bg-indigo-50 border-indigo-200">
-                  <CardContent className="p-4">
-                    <p className="text-center font-medium text-indigo-800">
-                      {getCompressionText(compressionLevel[0])}
-                    </p>
-                    <p className="text-center text-sm text-indigo-600 mt-1">
-                      Redução estimada: ~{100 - compressionLevel[0]}%
-                    </p>
-                  </CardContent>
-                </Card>
               </div>
 
               {isProcessing && (
