@@ -3,14 +3,15 @@
 <html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <link rel="icon" href="/icons/icon-72x72.png" type="image/png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
     <title>PDFTools - Ferramentas PDF Completas</title>
-    <meta name="description" content="Todas as ferramentas de PDF que você precisa: converter, comprimir, juntar, dividir, traduzir e muito mais. Gratuito e seguro." />
+    <meta name="description" content="PDFTools: Converta imagens para PDF, junte, comprima e gire PDFs. Ferramentas 100% funcionais, gratuitas e seguras." />
     
     <!-- PWA Meta Tags -->
     <link rel="manifest" href="/manifest.json" />
-    <meta name="theme-color" content="#3b82f6" />
+    <meta name="theme-color" content="#3b82f6" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#1e293b" media="(prefers-color-scheme: dark)" />
     <meta name="background-color" content="#ffffff" />
     <meta name="display" content="standalone" />
     <meta name="orientation" content="portrait-primary" />
@@ -19,7 +20,15 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="PDFTools" />
-    <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+    <link rel="apple-touch-icon" href="/icons/icon-152x152.png" />
+    <link rel="apple-touch-icon" sizes="72x72" href="/icons/icon-72x72.png" />
+    <link rel="apple-touch-icon" sizes="96x96" href="/icons/icon-96x96.png" />
+    <link rel="apple-touch-icon" sizes="128x128" href="/icons/icon-128x128.png" />
+    <link rel="apple-touch-icon" sizes="144x144" href="/icons/icon-144x144.png" />
+    <link rel="apple-touch-icon" sizes="152x152" href="/icons/icon-152x152.png" />
+    <link rel="apple-touch-icon" sizes="192x192" href="/icons/icon-192x192.png" />
+    <link rel="apple-touch-icon" sizes="384x384" href="/icons/icon-384x384.png" />
+    <link rel="apple-touch-icon" sizes="512x512" href="/icons/icon-512x512.png" />
     
     <!-- Android PWA Meta Tags -->
     <meta name="mobile-web-app-capable" content="yes" />
@@ -27,31 +36,48 @@
     
     <!-- Windows PWA Meta Tags -->
     <meta name="msapplication-TileColor" content="#3b82f6" />
-    <meta name="msapplication-TileImage" content="/icons/icon-192x192.png" />
+    <meta name="msapplication-TileImage" content="/icons/icon-144x144.png" />
     <meta name="msapplication-navbutton-color" content="#3b82f6" />
+    <meta name="msapplication-starturl" content="/" />
+    
+    <!-- Additional PWA Icons -->
+    <link rel="icon" type="image/png" sizes="72x72" href="/icons/icon-72x72.png" />
+    <link rel="icon" type="image/png" sizes="96x96" href="/icons/icon-96x96.png" />
+    <link rel="icon" type="image/png" sizes="128x128" href="/icons/icon-128x128.png" />
+    <link rel="icon" type="image/png" sizes="144x144" href="/icons/icon-144x144.png" />
+    <link rel="icon" type="image/png" sizes="152x152" href="/icons/icon-152x152.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192x192.png" />
+    <link rel="icon" type="image/png" sizes="384x384" href="/icons/icon-384x384.png" />
+    <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512x512.png" />
     
     <!-- SEO Meta Tags -->
     <meta name="robots" content="index, follow" />
     <meta name="language" content="Portuguese" />
     <meta name="author" content="PDFTools" />
-    <meta name="keywords" content="PDF, converter, comprimir, juntar, dividir, traduzir, ferramenta, online, gratuito" />
+    <meta name="keywords" content="PDF, converter, comprimir, juntar, girar, ferramentas, online, gratuito, PWA, app" />
     
     <!-- Open Graph Meta Tags -->
     <meta property="og:title" content="PDFTools - Ferramentas PDF Completas" />
-    <meta property="og:description" content="Todas as ferramentas de PDF que você precisa em um só lugar" />
+    <meta property="og:description" content="Converta imagens para PDF, junte, comprima e gire PDFs. Ferramentas 100% funcionais." />
     <meta property="og:type" content="website" />
     <meta property="og:image" content="/icons/icon-512x512.png" />
+    <meta property="og:url" content="/" />
+    <meta property="og:site_name" content="PDFTools" />
     
     <!-- Twitter Meta Tags -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="PDFTools - Ferramentas PDF Completas" />
-    <meta name="twitter:description" content="Todas as ferramentas de PDF que você precisa em um só lugar" />
+    <meta name="twitter:description" content="Converta imagens para PDF, junte, comprima e gire PDFs. Ferramentas 100% funcionais." />
     <meta name="twitter:image" content="/icons/icon-512x512.png" />
     
     <!-- Preload Critical Resources -->
     <link rel="preload" href="/icons/icon-192x192.png" as="image" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    
+    <!-- Splash screens para iOS -->
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <link rel="apple-touch-startup-image" href="/icons/icon-512x512.png" />
   </head>
   <body>
     <div id="root"></div>
@@ -59,15 +85,45 @@
     
     <!-- Register Service Worker -->
     <script>
+      // Registrar Service Worker
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', function() {
           navigator.serviceWorker.register('/sw.js')
             .then(function(registration) {
-              console.log('ServiceWorker registration successful');
-            }, function(err) {
-              console.log('ServiceWorker registration failed: ', err);
+              console.log('Service Worker registrado com sucesso:', registration.scope);
+              
+              // Verificar por atualizações
+              registration.addEventListener('updatefound', () => {
+                console.log('Nova versão do Service Worker encontrada');
+              });
+            })
+            .catch(function(error) {
+              console.log('Falha ao registrar Service Worker:', error);
             });
         });
+
+        // Escutar mudanças no Service Worker
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+          console.log('Service Worker atualizado');
+          // Opcionalmente recarregar a página
+          // window.location.reload();
+        });
+      }
+
+      // Detectar quando o app está sendo usado como PWA
+      window.addEventListener('beforeinstallprompt', (e) => {
+        console.log('PWA install prompt disponível');
+        // O prompt será mostrado pelo componente PWAInstallPrompt
+      });
+
+      // Detectar quando o PWA foi instalado
+      window.addEventListener('appinstalled', (evt) => {
+        console.log('PWA foi instalado com sucesso');
+      });
+
+      // Melhorar a experiência em dispositivos iOS
+      if (window.navigator.standalone === true) {
+        console.log('App rodando como PWA standalone no iOS');
       }
     </script>
   </body>
