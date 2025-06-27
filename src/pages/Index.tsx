@@ -1,6 +1,5 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { 
   FileImage, 
@@ -94,7 +93,7 @@ const Index = () => {
       {/* Header */}
       <header className="bg-white/80 backdrop-blur-sm border-b border-blue-100 sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-center">
             <div className="flex items-center space-x-2">
               <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
                 <FileText className="w-5 h-5 text-white" />
@@ -103,14 +102,6 @@ const Index = () => {
                 PDFTools
               </h1>
             </div>
-            <nav className="hidden md:flex space-x-2">
-              <Button variant="ghost" className="text-slate-600 hover:text-blue-600">
-                Sobre
-              </Button>
-              <Button variant="ghost" className="text-slate-600 hover:text-blue-600">
-                Contato
-              </Button>
-            </nav>
           </div>
         </div>
       </header>
@@ -129,14 +120,6 @@ const Index = () => {
             Converta, edite, comprima e manipule seus documentos PDF de forma gratuita e segura. 
             Todas as ferramentas em um só lugar, sem necessidade de instalação.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button size="lg" className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-3 text-lg">
-              Começar Agora
-            </Button>
-            <Button size="lg" variant="outline" className="border-2 border-blue-200 text-blue-600 hover:bg-blue-50 px-8 py-3 text-lg">
-              Ver Demonstração
-            </Button>
-          </div>
         </div>
       </section>
 
@@ -201,52 +184,6 @@ const Index = () => {
           </div>
         </div>
       </section>
-
-      {/* Footer */}
-      <footer className="bg-slate-800 text-white py-12 px-4">
-        <div className="container mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-            <div>
-              <div className="flex items-center space-x-2 mb-4">
-                <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
-                  <FileText className="w-5 h-5 text-white" />
-                </div>
-                <h5 className="text-xl font-bold">PDFTools</h5>
-              </div>
-              <p className="text-slate-400">
-                A melhor plataforma para todas as suas necessidades de PDF.
-              </p>
-            </div>
-            <div>
-              <h6 className="font-semibold mb-4">Ferramentas</h6>
-              <ul className="space-y-2 text-slate-400">
-                <li><a href="#" className="hover:text-white transition-colors">Converter PDF</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Comprimir PDF</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Juntar PDF</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Dividir PDF</a></li>
-              </ul>
-            </div>
-            <div>
-              <h6 className="font-semibold mb-4">Suporte</h6>
-              <ul className="space-y-2 text-slate-400">
-                <li><a href="#" className="hover:text-white transition-colors">Central de Ajuda</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Contato</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">FAQ</a></li>
-              </ul>
-            </div>
-            <div>
-              <h6 className="font-semibold mb-4">Legal</h6>
-              <ul className="space-y-2 text-slate-400">
-                <li><a href="#" className="hover:text-white transition-colors">Privacidade</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Termos</a></li>
-              </ul>
-            </div>
-          </div>
-          <div className="border-t border-slate-700 mt-8 pt-8 text-center text-slate-400">
-            <p>&copy; 2024 PDFTools. Todos os direitos reservados.</p>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 };

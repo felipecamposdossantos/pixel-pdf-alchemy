@@ -4,16 +4,17 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
-import { RotateCw, Upload, ArrowLeft, Download } from "lucide-react";
+import { RotateCw, RotateCcw, Upload, ArrowLeft, Download } from "lucide-react";
 import { Link } from "react-router-dom";
+import { PDFDocument, degrees } from 'pdf-lib';
 
 const RotatePdf = () => {
   const [file, setFile] = useState<File | null>(null);
   const [rotation, setRotation] = useState(90);
-  const [pageRange, setPageRange] = useState("all");
-  const [customPages, setCustomPages] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
+  const [progress, setProgress] = useState(0);
   const [rotatedFile, setRotatedFile] = useState<string | null>(null);
   const { toast } = useToast();
 
@@ -31,6 +32,25 @@ const RotatePdf = () => {
     }
   };
 
+  const rotatePdf = async (pdfBytes: ArrayBuffer, rotationDegrees: number): Promise<ArrayBuffer> => {
+    const pdf = await PDFDocument.load(pdfBytes);
+    const pageCount = pdf.getPageCount();
+    
+    // Rotacionar todas as páginas
+    for (let i = 0; i < pageCount; i++) {
+      setProgress((i / pageCount) * 90);
+      
+      const page = pdf.getPage(i);
+      page.setRotation(degrees(rotationDegrees));
+      
+      // Simular delay de processamento
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+    
+    const rotatedBytes = await pdf.save();
+    return rotatedBytes;
+  };
+
   const handleRotate = async () => {
     if (!file) {
       toast({
@@ -42,19 +62,35 @@ const RotatePdf = () => {
     }
 
     setIsProcessing(true);
-    
-    // Simulação do processamento
-    setTimeout(() => {
-      setIsProcessing(false);
-      // Simular arquivo rotacionado
-      const blob = new Blob([`PDF rotacionado ${rotation}°`], { type: 'application/pdf' });
+    setProgress(0);
+
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      
+      // Rotacionar PDF
+      const rotatedBytes = await rotatePdf(arrayBuffer, rotation);
+      
+      // Criar blob e URL
+      const blob = new Blob([rotatedBytes], { type: 'application/pdf' });
       const url = URL.createObjectURL(blob);
       setRotatedFile(url);
+      setProgress(100);
+
       toast({
         title: "Sucesso!",
         description: `PDF rotacionado ${rotation}° com sucesso!`,
       });
-    }, 2000);
+
+    } catch (error) {
+      console.error('Erro ao rotacionar PDF:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao rotacionar o arquivo PDF. Tente novamente.",
+        variant: "destructive"
+      });
+    }
+
+    setIsProcessing(false);
   };
 
   const handleDownload = () => {
@@ -67,12 +103,6 @@ const RotatePdf = () => {
       document.body.removeChild(link);
     }
   };
-
-  const rotationOptions = [
-    { value: 90, label: "90° (Horário)" },
-    { value: 180, label: "180° (Inverter)" },
-    { value: 270, label: "270° (Anti-horário)" },
-  ];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
@@ -97,7 +127,7 @@ const RotatePdf = () => {
             <CardHeader className="text-center">
               <CardTitle className="text-2xl text-slate-800">Girar PDF</CardTitle>
               <CardDescription>
-                Gire as páginas do seu PDF na orientação correta
+                Gire todas as páginas do seu PDF na orientação desejada
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -118,82 +148,47 @@ const RotatePdf = () => {
               </div>
 
               <div className="space-y-4">
-                <Label className="text-lg font-medium text-slate-700">Ângulo de rotação:</Label>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                  {rotationOptions.map((option) => (
-                    <Card
-                      key={option.value}
-                      className={`cursor-pointer transition-all ${
-                        rotation === option.value ? "ring-2 ring-teal-500 bg-teal-50" : "hover:bg-gray-50"
-                      }`}
-                      onClick={() => setRotation(option.value)}
+                <Label className="text-lg font-medium text-slate-700">Ângulo de rotação</Label>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {[90, 180, 270, -90].map((angle) => (
+                    <Button
+                      key={angle}
+                      variant={rotation === angle ? "default" : "outline"}
+                      onClick={() => setRotation(angle)}
+                      className="flex flex-col items-center p-4 h-auto"
                     >
-                      <CardContent className="p-4 text-center">
-                        <RotateCw className="w-8 h-8 mx-auto mb-2 text-teal-600" />
-                        <p className="font-medium">{option.label}</p>
-                      </CardContent>
-                    </Card>
+                      {angle === 90 && <RotateCw className="w-6 h-6 mb-2" />}
+                      {angle === 180 && <RotateCw className="w-6 h-6 mb-2 transform rotate-180" />}
+                      {angle === 270 && <RotateCcw className="w-6 h-6 mb-2" />}
+                      {angle === -90 && <RotateCcw className="w-6 h-6 mb-2" />}
+                      <span className="text-sm">{angle > 0 ? `${angle}°` : `${Math.abs(angle)}° ←`}</span>
+                    </Button>
                   ))}
                 </div>
               </div>
 
-              <div className="space-y-4">
-                <Label className="text-lg font-medium text-slate-700">Páginas a girar:</Label>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <Card
-                    className={`cursor-pointer transition-all ${
-                      pageRange === "all" ? "ring-2 ring-teal-500 bg-teal-50" : "hover:bg-gray-50"
-                    }`}
-                    onClick={() => setPageRange("all")}
-                  >
-                    <CardContent className="p-4">
-                      <h3 className="font-medium">Todas as páginas</h3>
-                      <p className="text-sm text-gray-600">Girar todo o documento</p>
-                    </CardContent>
-                  </Card>
-                  <Card
-                    className={`cursor-pointer transition-all ${
-                      pageRange === "custom" ? "ring-2 ring-teal-500 bg-teal-50" : "hover:bg-gray-50"
-                    }`}
-                    onClick={() => setPageRange("custom")}
-                  >
-                    <CardContent className="p-4">
-                      <h3 className="font-medium">Páginas específicas</h3>
-                      <p className="text-sm text-gray-600">Ex: 1,3,5-8</p>
-                    </CardContent>
-                  </Card>
-                </div>
-
-                {pageRange === "custom" && (
-                  <div>
-                    <Label htmlFor="custom-pages">Páginas específicas</Label>
-                    <Input
-                      id="custom-pages"
-                      value={customPages}
-                      onChange={(e) => setCustomPages(e.target.value)}
-                      placeholder="1,3,5-8"
-                      className="mt-2"
-                    />
+              {isProcessing && (
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span>Rotacionando PDF...</span>
+                    <span>{Math.round(progress)}%</span>
                   </div>
-                )}
-              </div>
+                  <Progress value={progress} className="w-full" />
+                </div>
+              )}
 
-              {!rotatedFile ? (
+              {!rotatedFile && !isProcessing && (
                 <Button
                   onClick={handleRotate}
-                  disabled={!file || isProcessing}
+                  disabled={!file}
                   className="w-full bg-gradient-to-r from-teal-500 to-green-600 hover:from-teal-600 hover:to-green-700 text-white py-3 text-lg"
                 >
-                  {isProcessing ? (
-                    <>Girando...</>
-                  ) : (
-                    <>
-                      <RotateCw className="w-5 h-5 mr-2" />
-                      Girar PDF
-                    </>
-                  )}
+                  <RotateCw className="w-5 h-5 mr-2" />
+                  Girar PDF {rotation}°
                 </Button>
-              ) : (
+              )}
+
+              {rotatedFile && (
                 <div className="space-y-4">
                   <Card className="bg-green-50 border-green-200">
                     <CardContent className="p-4">
@@ -201,7 +196,7 @@ const RotatePdf = () => {
                         ✅ PDF rotacionado com sucesso!
                       </p>
                       <p className="text-center text-sm text-green-600 mt-1">
-                        Arquivo pronto para download
+                        Todas as páginas foram rotacionadas {rotation}°
                       </p>
                     </CardContent>
                   </Card>
@@ -216,6 +211,7 @@ const RotatePdf = () => {
                     onClick={() => {
                       setFile(null);
                       setRotatedFile(null);
+                      setProgress(0);
                     }}
                     variant="outline"
                     className="w-full"
